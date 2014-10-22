@@ -1,4 +1,3 @@
-
 boolean initialized = false;
 
 void setup() {
@@ -84,3 +83,4 @@ void loop () {
     }   
   } 
 }
+
