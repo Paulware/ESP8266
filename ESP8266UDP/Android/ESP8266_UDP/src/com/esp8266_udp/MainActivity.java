@@ -27,6 +27,7 @@ import android.widget.TextView;
 @SuppressLint("NewApi") 
 public class MainActivity extends ActionBarActivity {
 	
+	private String localNetwork = ""; // Change this to match your subnet
 	private int hostPort = 3333;
 	private Button btnFind;
 	private EditText txtKey;
@@ -36,7 +37,6 @@ public class MainActivity extends ActionBarActivity {
 	private TextView txtStatus;
 	private MyDatagramReceiver myDatagramReceiver;
 	private String statusString;
-	private String localNetwork = "192.168.0.255"; // Change this to match your subnet
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,22 +47,20 @@ public class MainActivity extends ActionBarActivity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 		StrictMode.setThreadPolicy(policy);	
 		
-
 		txtKey = (EditText) findViewById(R.id.txtKey);
 		
 		txtStatus = (TextView) findViewById (R.id.txtStatus);
 
+		// Find the device with the given key
     	btnFind = (Button) findViewById(R.id.btnFind);
-    	// Save the rule to the pi Server
-		btnFind.setOnClickListener(new OnClickListener() {  		
+ 		btnFind.setOnClickListener(new OnClickListener() {  		
 			@SuppressLint("NewApi")
 			public void onClick(View v) {
-				myDatagramReceiver.discoverServerAddr (localNetwork);
+				myDatagramReceiver.discoverDeviceAddr (localNetwork);
 			}
 		});    	
 		
     	btnCmd1 = (Button) findViewById(R.id.btnCmd1);
-    	// Save the rule to the pi Server
 		btnCmd1.setOnClickListener(new OnClickListener() {  		
 			@SuppressLint("NewApi")
 			public void onClick(View v) {
@@ -71,7 +69,6 @@ public class MainActivity extends ActionBarActivity {
 		});    	
 		
     	btnCmd2 = (Button) findViewById(R.id.btnCmd2);
-    	// Save the rule to the pi Server
 		btnCmd2.setOnClickListener(new OnClickListener() {  		
 			@SuppressLint("NewApi")
 			public void onClick(View v) {
@@ -80,7 +77,6 @@ public class MainActivity extends ActionBarActivity {
 		});    	
 		
     	btnCmd3 = (Button) findViewById(R.id.btnCmd3);
-    	// Save the rule to the pi Server
 		btnCmd3.setOnClickListener(new OnClickListener() {  		
 			@SuppressLint("NewApi")
 			public void onClick(View v) {
@@ -113,24 +109,22 @@ public class MainActivity extends ActionBarActivity {
     }
     
 	private class MyDatagramReceiver extends Thread {
-
-		public String lastMessage = "";
 		
 		private boolean bKeepRunning = true;
 		private String newMessage = "";
 		private int msgNumber = 0;
 		private int lastMsgNumber = 0;
 		private DatagramSocket socket = null;
-		public InetAddress serverAddress = null;
+		public InetAddress deviceAddress = null;
 		private String myIpAddress;
 		private InetAddress myAddress = null;
 		private String receivedData;
-		private String serverIpAddress = "";
+		private String deviceIpAddress = "";
 
 		public void sendMessage(String msg) {
 		
 			newMessage = msg;
-			incrementMessage();
+			msgNumber = msgNumber + 1;
 		}
 
 		public void wait(int millis) {
@@ -138,10 +132,6 @@ public class MainActivity extends ActionBarActivity {
 				Thread.sleep(millis); // Allow background task to run
 			} catch (Exception e) {
 			}
-		}
-
-		public void incrementMessage() {
-			msgNumber = msgNumber + 1;
 		}
 
 		public DatagramPacket getPacket() {
@@ -166,8 +156,8 @@ public class MainActivity extends ActionBarActivity {
 			if (receivedPacket != null) {
 				String info = new String(receivedPacket.getData());
 				receivedData = new String(info.substring(0,receivedPacket.getLength()));
-				System.out.println("Received " + receivedData + " from server ");
-				postMessage("Received: " + receivedData);
+				System.out.println("Received " + receivedData + " from device");
+				statusString = "Received: " + receivedData;
 				runOnUiThread(updateTxtStatus);
 				gotPacket = true;
 			}
@@ -210,7 +200,7 @@ public class MainActivity extends ActionBarActivity {
 		}
 
 		// String deviceIp: Address on local network like 192.168.0.255
-		public String discoverServerAddr(String deviceIp) {
+		public String discoverDeviceAddr(String deviceIp) {
 			/*
 			 * Send 'find' + txtKey and receive the packet response
 			 *  return the address associated with the response from the device
@@ -220,40 +210,42 @@ public class MainActivity extends ActionBarActivity {
 			String addr = "";
 
 			try {
-				serverAddress = InetAddress.getByName(deviceIp);
+				deviceAddress = InetAddress.getByName(deviceIp);
 				sendPacket = null;
 				sendPacket = new DatagramPacket(newMessage.getBytes(),
-						newMessage.length(), serverAddress, hostPort);
+						newMessage.length(), deviceAddress, hostPort);
 
 				try {
-					System.out.println("discoverServerAddr, " + myIpAddress + ": Sending RTS");
+					System.out.println("discoverDeviceAddr, " + myIpAddress + ": Sending RTS");
 					socket.send(sendPacket);
 					statusString = new String(newMessage + " to " + deviceIp + ":" + hostPort);
 					runOnUiThread(updateTxtStatus);
 					
 					getPacket(); // First, we receive the echo.
-					// Now receive the packet from the server
-					DatagramPacket serverPacket = getPacket(); 
+					// Now receive the packet from the device
+					DatagramPacket devicePacket = getPacket(); 
 					
-					InetAddress comm_ip = serverPacket.getAddress();
+					InetAddress comm_ip = devicePacket.getAddress();
 					addr = new String(getHostName(comm_ip));
-					System.out.println("Server discovered at: ");
+					System.out.println("Device discovered at: ");
 					System.out.println(addr);
-					statusString = new String ("Server address discovered at: " + addr);
+					statusString = new String ("Device address discovered at: " + addr);
 					runOnUiThread(updateTxtStatus);
 
 				} catch (IOException i) {
-					System.out.println("Could not send packet in discover server addr");
+					System.out.println("Could not socket.send: " + i);
 				}
 			} catch (Exception e) {
-				System.out.println("Could not getByName (" + deviceIp + "(");
+				System.out.println("Could not create a sendPacket: " + e);
 			}
 			return addr;
 		}
 		
 		@SuppressLint("NewApi")
+		// Get my ip address
 		public String ip() {
 			String addr = "";
+			int lastDot = 0;
 			try {
 				Enumeration<NetworkInterface> nis = NetworkInterface
 						.getNetworkInterfaces();
@@ -273,6 +265,11 @@ public class MainActivity extends ActionBarActivity {
 								System.out.println("my ip address: " + addr
 										+ ".");
 								statusString = new String ( "my ip address = " + addr);
+								// update localNetwork
+                                lastDot = addr.lastIndexOf ( ".");                                
+                                localNetwork = new String (addr.substring (0,lastDot) + ".255");
+                                System.out.println ( "localNetwork:" + localNetwork);
+                                
 								break;
 							}
 						}
@@ -289,12 +286,12 @@ public class MainActivity extends ActionBarActivity {
 		public void run() {
 			System.out.println ( "DataGramReceiver.run()");
 			
-			if (serverIpAddress.equals("")) {
+			if (deviceIpAddress.equals("")) {
 				try {
 					System.out.println("Get the socket.");
 					socket = new DatagramSocket(hostPort);
 					System.out.println("setSoTimeout");
-					socket.setSoTimeout(1000); // Allow enough time for server to respond
+					socket.setSoTimeout(1300); // Allow enough time for the device to respond
 					System.out.println("setReuseAddress");
 					socket.setReuseAddress(true); // why?
 				} catch (Exception e) {
@@ -303,60 +300,55 @@ public class MainActivity extends ActionBarActivity {
 
 				myIpAddress = new String(ip());
 	
-				while (serverIpAddress.equals ("")) {
-					// Get the String for server Address
-					serverIpAddress = new String(discoverServerAddr(localNetwork)); // Get server address
+				while (deviceIpAddress.equals ("")) {
+					// Get the String for device Address
+					deviceIpAddress = new String(discoverDeviceAddr(localNetwork)); // Get device address
 					wait (500);
 				}
-				System.out.println("serverIpAddress: " + serverIpAddress);
-				// Get the InetAddress for serverAddress
+				System.out.println("deviceIpAddress: " + deviceIpAddress);
+				// Get the InetAddress for deviceAddress
 				try {
-					serverAddress = InetAddress.getByName(serverIpAddress);
+					deviceAddress = InetAddress.getByName(deviceIpAddress);
 				} catch (Exception e) {
 					Log.e("UDP", "C: Error", e);
 				}
 			
-				//readPoolInfo();
-				statusString = new String ("Server: " + serverIpAddress);
+				statusString = new String ("Device: " + deviceIpAddress);
 				runOnUiThread(updateTxtStatus);
 			}
-			
-			// Get the rules so you can show the first one
-			sendMessage("Show");
 			
 			try {
 				DatagramPacket sendPacket;
 				System.out.println ( "Run forever");
 				while (bKeepRunning) {
-					
-				
+									
 					try {
-						if (msgNumber == lastMsgNumber) {
-							wait(10);
-						} else { 
-							// if (msgNumber != lastMsgNumber)
-							//inProgress = true;
+						if (msgNumber != lastMsgNumber) {
 							lastMsgNumber = msgNumber;
 							sendPacket = new DatagramPacket(
 									newMessage.getBytes(), newMessage.length(),
-									serverAddress, hostPort);
+									deviceAddress, hostPort);
 							System.out.println("Send:");
 							System.out.println(newMessage);
 							System.out.println("to ");
-							System.out.println(serverIpAddress); 
-							socket.send(sendPacket);
-							
-							postMessage("Sending: " + newMessage);
-							if (getReceivePacket()) {
-								postMessage(receivedData);
-								if (receivedData.equals("ACK")) {
-									postMessage("Server Acknowledged");
-								} else {
-							  	   postMessage ("Server failed to ACK");
-								}
-							}
-							else {
-							   postMessage ("Missing response msg");
+							System.out.println(deviceIpAddress); 
+							while (true) {
+								socket.send(sendPacket);							
+								//statusString = "Sending: " + newMessage;
+								//runOnUiThread (updateTxtStatus);
+								if (getReceivePacket()) {
+									//statusString = receivedData;
+									//runOnUiThread (updateTxtStatus);
+									System.out.println ( "Got back response: " + receivedData + ".");
+									if (receivedData.trim().equals("ACK")) {
+										statusString = "Device Ack'd " + newMessage;
+										runOnUiThread (updateTxtStatus);
+										break;
+									} else {
+										statusString = "Device failed to ACK";
+										runOnUiThread (updateTxtStatus);	
+									}
+								}	
 							}
 						}
 					} catch (Throwable e) {
@@ -372,12 +364,7 @@ public class MainActivity extends ActionBarActivity {
 			
 			
 		}
-		
-		public void postMessage(String msg) {
-			lastMessage = msg;
-			runOnUiThread(updateTxtStatus);
-		}
-		
+				
 	}
 	
 	private Runnable updateTxtStatus = new Runnable() {
