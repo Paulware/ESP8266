@@ -15,4 +15,6 @@ Basic theory of UDP operation:
 
    The unit will now respond to commands, like "open" or "readTemp".
 
-   I think it should scale nicely. 
+ 
+
+<img src="ESP8266.jpg">

@@ -3328,17 +3328,20 @@ Standard 8-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <pinref part="JP11" gate="G$1" pin="5"/>
 </segment>
 <segment>
-<pinref part="R3" gate="G$1" pin="1"/>
-<wire x1="121.92" y1="-29.21" x2="115.57" y2="-29.21" width="0.1524" layer="91"/>
-<label x="114.3" y="-29.21" size="1.778" layer="95"/>
-</segment>
-<segment>
 <pinref part="JP3" gate="G$1" pin="1"/>
 <wire x1="172.72" y1="55.88" x2="167.64" y2="55.88" width="0.1524" layer="91"/>
 <label x="167.64" y="55.88" size="1.778" layer="95"/>
 <pinref part="JP5" gate="G$1" pin="1"/>
 <junction x="172.72" y="55.88"/>
 <wire x1="172.72" y1="55.88" x2="175.26" y2="55.88" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="Q2" gate="G$1" pin="E"/>
+<pinref part="R5" gate="G$1" pin="1"/>
+<wire x1="143.51" y1="-34.29" x2="139.7" y2="-34.29" width="0.1524" layer="91"/>
+<wire x1="139.7" y1="-34.29" x2="139.7" y2="-41.91" width="0.1524" layer="91"/>
+<junction x="139.7" y="-34.29"/>
+<label x="139.7" y="-41.91" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="RESET" class="0">
@@ -3430,13 +3433,9 @@ Standard 8-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <label x="55.88" y="-20.32" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="Q2" gate="G$1" pin="E"/>
-<pinref part="R5" gate="G$1" pin="1"/>
-<wire x1="143.51" y1="-34.29" x2="139.7" y2="-34.29" width="0.1524" layer="91"/>
-<wire x1="139.7" y1="-34.29" x2="129.54" y2="-34.29" width="0.1524" layer="91"/>
-<wire x1="129.54" y1="-34.29" x2="129.54" y2="-36.83" width="0.1524" layer="91"/>
-<junction x="139.7" y="-34.29"/>
-<label x="129.54" y="-36.83" size="1.778" layer="95"/>
+<pinref part="R3" gate="G$1" pin="1"/>
+<wire x1="121.92" y1="-29.21" x2="115.57" y2="-29.21" width="0.1524" layer="91"/>
+<label x="115.57" y="-29.21" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="ESPRX" class="0">

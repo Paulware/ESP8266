@@ -13,6 +13,7 @@ import com.esp8266_udp.R;
 
 import android.support.v7.app.ActionBarActivity;
 import android.annotation.SuppressLint;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -37,11 +38,21 @@ public class MainActivity extends ActionBarActivity {
 	private TextView txtStatus;
 	private MyDatagramReceiver myDatagramReceiver;
 	private String statusString;
+	private DatagramPacket sendPacket;
+	
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		myDatagramReceiver.kill();
+		super.onDestroy();
+	}
+	
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 		myDatagramReceiver = new MyDatagramReceiver();
 		super.onCreate(savedInstanceState);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
@@ -120,6 +131,11 @@ public class MainActivity extends ActionBarActivity {
 		private InetAddress myAddress = null;
 		private String receivedData;
 		private String deviceIpAddress = "";
+
+		public void kill() {
+		    socket.close();
+		}
+		
 
 		public void sendMessage(String msg) {
 		
@@ -205,38 +221,53 @@ public class MainActivity extends ActionBarActivity {
 			 * Send 'find' + txtKey and receive the packet response
 			 *  return the address associated with the response from the device
 			 */
-			String newMessage = "find" + txtKey.getText();
-			DatagramPacket sendPacket;
+			String newMessage = "findkey"; //  + txtKey.getText();
 			String addr = "";
+			int len;
 
 			try {
 				deviceAddress = InetAddress.getByName(deviceIp);
-				sendPacket = null;
-				sendPacket = new DatagramPacket(newMessage.getBytes(),
-						newMessage.length(), deviceAddress, hostPort);
+				System.out.println ( "deviceAddress: " + deviceAddress + " hostPort: " + hostPort);
+				
+		        len = newMessage.length();
+		        System.out.println ( "newMessage.length(): " + len );
+		        System.out.println ( "newMessage:" + newMessage);
+				sendPacket = new DatagramPacket(newMessage.getBytes(),newMessage.length(), deviceAddress, hostPort);
 
 				try {
 					System.out.println("discoverDeviceAddr, " + myIpAddress + ": Sending RTS");
 					socket.send(sendPacket);
-					statusString = new String(newMessage + " to " + deviceIp + ":" + hostPort);
-					runOnUiThread(updateTxtStatus);
+					try {
+						statusString = new String(newMessage + " to " + deviceIp + ":" + hostPort);
+						runOnUiThread(updateTxtStatus);
 					
-					getPacket(); // First, we receive the echo.
-					// Now receive the packet from the device
-					DatagramPacket devicePacket = getPacket(); 
-					
-					InetAddress comm_ip = devicePacket.getAddress();
-					addr = new String(getHostName(comm_ip));
-					System.out.println("Device discovered at: ");
-					System.out.println(addr);
-					statusString = new String ("Device address discovered at: " + addr);
-					runOnUiThread(updateTxtStatus);
+						getPacket(); // First, we receive the echo.
+						// Now receive the packet from the device
+						DatagramPacket devicePacket = getPacket(); 
+						if (devicePacket == null) 
+							System.out.println ( "Got a null response (getPacket)");
+						else {
+							try {			
+								InetAddress comm_ip = devicePacket.getAddress();
+								addr = new String(getHostName(comm_ip));
+								System.out.println("Device discovered at: ");
+								System.out.println(addr);
+								statusString = new String ("Device address discovered at: " + addr);
+								runOnUiThread(updateTxtStatus);
+							} catch (Exception k) {
+								System.out.println ( "Could not getAddress " + k );
+							}
+						} 
+					} catch (Exception j) {
+					    System.out.println ( "Could not get packet" + j);
+					}
 
-				} catch (IOException i) {
+				} catch (Exception i) {
 					System.out.println("Could not socket.send: " + i);
 				}
+			
 			} catch (Exception e) {
-				System.out.println("Could not create a sendPacket: " + e);
+				System.out.println("Could not create a sendPacket1: " + e);
 			}
 			return addr;
 		}
@@ -267,7 +298,7 @@ public class MainActivity extends ActionBarActivity {
 								statusString = new String ( "my ip address = " + addr);
 								// update localNetwork
                                 lastDot = addr.lastIndexOf ( ".");                                
-                                localNetwork = new String (addr.substring (0,lastDot) + ".255");
+                                localNetwork = new String (addr.substring (0,lastDot) + ".255"); // ".70"); // ".255");
                                 System.out.println ( "localNetwork:" + localNetwork);
                                 
 								break;
@@ -291,7 +322,7 @@ public class MainActivity extends ActionBarActivity {
 					System.out.println("Get the socket.");
 					socket = new DatagramSocket(hostPort);
 					System.out.println("setSoTimeout");
-					socket.setSoTimeout(1300); // Allow enough time for the device to respond
+					socket.setSoTimeout(3000); // Allow enough time for the device to respond
 					System.out.println("setReuseAddress");
 					socket.setReuseAddress(true); // why?
 				} catch (Exception e) {
@@ -303,7 +334,7 @@ public class MainActivity extends ActionBarActivity {
 				while (deviceIpAddress.equals ("")) {
 					// Get the String for device Address
 					deviceIpAddress = new String(discoverDeviceAddr(localNetwork)); // Get device address
-					wait (500);
+					wait (2500);
 				}
 				System.out.println("deviceIpAddress: " + deviceIpAddress);
 				// Get the InetAddress for deviceAddress
@@ -318,7 +349,7 @@ public class MainActivity extends ActionBarActivity {
 			}
 			
 			try {
-				DatagramPacket sendPacket;
+				// DatagramPacket sendPacket;
 				System.out.println ( "Run forever");
 				while (bKeepRunning) {
 									
@@ -328,10 +359,9 @@ public class MainActivity extends ActionBarActivity {
 							sendPacket = new DatagramPacket(
 									newMessage.getBytes(), newMessage.length(),
 									deviceAddress, hostPort);
-							System.out.println("Send:");
-							System.out.println(newMessage);
-							System.out.println("to ");
-							System.out.println(deviceIpAddress); 
+							System.out.println("Send:" + newMessage + " to " + deviceIpAddress);
+							socket.send(sendPacket);							
+							/*
 							while (true) {
 								socket.send(sendPacket);							
 								//statusString = "Sending: " + newMessage;
@@ -350,6 +380,7 @@ public class MainActivity extends ActionBarActivity {
 									}
 								}	
 							}
+							*/
 						}
 					} catch (Throwable e) {
 						e.printStackTrace();
