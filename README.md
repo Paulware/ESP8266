@@ -15,8 +15,11 @@ Basic theory of UDP operation:
 
    The unit will now respond to commands, like "open" or "readTemp".
 
- 
-smart car <a href="https://www.youtube.com/watch?v=Go8Tyr9nKlo&feature=youtu.be">video</a>
- 
+
+<hr>
+<table>
+<tr><th>Videos</th></tr>
+<tr><td>smart car <a href="https://www.youtube.com/watch?v=Go8Tyr9nKlo&feature=youtu.be">video</a></td></tr>
+</table>
  
 <img src="ESP8266.jpg">
