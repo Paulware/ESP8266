@@ -15,6 +15,13 @@ Basic theory of UDP operation:
 
    The unit will now respond to commands, like "open" or "readTemp".
 
+Useful files/directories:
+=========================
+Schematics/ESP8266Tiny: An Eagle schematic to create a small pcb that holds an atmega328 and ESP8266 connected to D11/D12<br>
+The ESP8266 should be running at baud rate 9600.
+ssid and password are stored in EEPROM on the atmega328
+A serial based menu allows the user to set ssid/password/and unique key which identifies the ESP8266 on the local network
+<img src="ESP8266Tiny.jpg">
 
 <hr>
 <table>
