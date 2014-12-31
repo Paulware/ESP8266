@@ -31,7 +31,7 @@ class PSTRStrings1
     int stringLen( int which);
     int intersect ( PSTRStrings1 * targetList, int index );  
     bool checkMatch (int which);
-	
+    void showStrings (); 	
     int numStrings;
     
   private:  

@@ -165,6 +165,25 @@ void PSTRStrings1::show ( int startValue, int stopValue )
   }
 }
 
+void PSTRStrings1::showStrings () 
+{ 
+  int startValue = 0;
+  int stopValue = numStrings;
+  if (startValue < 0)
+    startValue = 0;
+  if (stopValue >= numStrings)
+    stopValue = numStrings;
+  
+  for (int i=startValue; i<stopValue; i++)
+  {
+    Serial.print ( i );
+    debugUtils.printPSTR ( PSTR ( ")" ) );
+    printString(i);
+    debugUtils.printPSTR ( PSTR ( "\n" ) );
+  }
+}
+
+
 void PSTRStrings1::showAll ( )
 {
   show (0, numStrings );
